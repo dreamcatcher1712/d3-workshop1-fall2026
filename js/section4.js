@@ -102,23 +102,70 @@ let top15Gas = energyData.slice(0, 15); // Get top 15 states
 top15Gas = top15Gas.map(d => ({ state: d.state, gas: parseFloat(d.gas) })); // Convert gas price to number and keep only state and gas
 
 // set the dimensions for the horizontal bar chart
-const hBarMargin = { top: 30, right: 30, bottom: 80, left: 150 };
-const hBarWidth = 400 - hBarMargin.left - hBarMargin.right;
+const hBarMargin = { top: 40, right: 40, bottom: 50, left: 110 };
+const hBarWidth = 700 - hBarMargin.left - hBarMargin.right;
 const hBarHeight = 500 - hBarMargin.top - hBarMargin.bottom;
 
 // Create SVG for horizontal bar chart
-
+const barSvg1 = d3.select('#demo-4')
+    .append('svg')
+    .attr('viewBox', `0 0 ${hBarWidth + hBarMargin.left + hBarMargin.right} ${hBarHeight + hBarMargin.top + hBarMargin.bottom}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .append('g')
+    .attr('transform', `translate(${hBarMargin.left},${hBarMargin.top})`);
 
 // Create scales for the horizontal bar chart
+const xBarScale1 = d3.scaleBand()
+    .domain(top15Gas.map(d => d.state)) // Input: state names
+    .range([0, hBarWidth]) // Output: width of the chart
+    .padding(0.25); // Padding between bars
 
+const yBar1 = d3.scaleLinear()
+    .domain([0, d3.max(top15Gas, d => d.gas)]) // Input: from 0 to max elec price in top 15
+    .range([hBarHeight, 0]); // Output: height of the chart (inverted because SVG y=0 is at the top)
 
 // Create axes and append them to the svg
+const xAxis1 = d3.axisBottom(xBarScale1);
 
+barSvg1.append('g')
+    .attr('transform', `translate(0, ${hBarHeight})`) // Move x axis to the bottom of the chart
+    .call(xAxis1)
+    .selectAll('text') // Rotate x axis labels for better readability
+    .attr('transform', 'rotate(-45)')
+    .style('text-anchor', 'end');
+
+// Y axis
+const yAxis1 = d3.axisLeft(yBar1)
+    .ticks(5)
+    .tickFormat(d => `$${d.toFixed(2)}`); // Set number of ticks on y axis
+
+barSvg1.append('g')
+    .call(yAxis1);
 
 // Create and append bars to the chart
-
+barSvg1.selectAll('rect')
+    .data(top15Gas)
+    .join('rect')
+    .attr('x', d => xBarScale1(d.state)) // Set x position based on state
+    .attr('y', d => yBar1(d.gas)) // Set y position based on electricity  price
+    .attr('width', xBarScale1.bandwidth()) // Set width of bars based on scale
+    .attr('height', d => hBarHeight - yBar1(d.gas)) // Set height of bars based on electricity price
+    .attr('fill', 'maroon') // Set bar color
 
 // Chart title
-
+barSvg1.append('text')
+    .attr('x', hBarWidth / 2) // Center the title horizontally
+    .attr('y', -10) // Position the title above the chart
+    .attr('text-anchor', 'middle') // Center the text
+    .style('font-size', '16px') 
+    .style('font-weight', 'bold')
+    .text('Top 15 States by Gas Price');
 
 // X axis label
+barSvg1.append('text')
+    .attr('transform', 'rotate(-90)') // Rotate the text to be vertical
+    .attr('x', -hBarHeight / 2) // Center the label vertically along the y axis
+    .attr('y', -55) // Position the label to the left of the y axis
+    .attr('text-anchor', 'middle') // Center the text
+    .style('font-size', '12px')
+    .text('Gas Price (per gallon)');
